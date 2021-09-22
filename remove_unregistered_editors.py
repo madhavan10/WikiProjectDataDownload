@@ -6,6 +6,31 @@ Created on Tue Sep 14 22:56:59 2021
 """
 
 import pandas as pd
+import os
+import csv
+from datetime import date
+import sys
+
+
+def get_properties_from_file(filename):
+    properties = dict()
+    with open(filename) as f:
+        for line in f:
+            if "=" in line:
+                key, value = line.split("=", 1)
+                properties[key.strip()] = value.strip()
+    return properties
+
+try:
+    properties = get_properties_from_file(sys.argv[1])
+except IndexError:
+    raise Exception("Specify a properties file as an argument to this script.")
+
+retrieveEditorsInputsPath = os.path.abspath(properties["retrieveEditorsInputsPath"])
+retrieveMembersInputsPath = os.path.abspath(properties["retrieveMembersInputsPath"])
+projectRootDir = os.path.abspath(properties["projectRootDir"])
+
+projectName = properties["projectName"]
 
 def lower_set(s):
     result = set()
@@ -13,48 +38,34 @@ def lower_set(s):
         result.add(elt.lower())
     return result
 
-userListPath1 = r"C:\users\madha\documents\wikiproject\user_lists\military_history_members_active.txt"
-userListPath2 = r"C:\users\madha\documents\wikiproject\user_lists\military_history_members_inactive.txt"
-csvPath = r"C:\users\madha\documents\wikiproject\project_join\military_history_final.csv"
-outputCsvPath = r"C:\users\madha\documents\wikiproject\project_join\military_history_checked.csv"
+editorsInputsDf = pd.read_excel(retrieveEditorsInputsPath)
+editorsInputsDf = editorsInputsDf[editorsInputsDf["wikiproject"] == projectName].reset_index(drop = True)
+membersInputsDf = pd.read_excel(retrieveMembersInputsPath)
+membersInputsDf = membersInputsDf[membersInputsDf["wikiproject"] == projectName].reset_index(drop = True)
 
-with open(userListPath1, "r", encoding = "utf-8") as usersFile:
-    fullText = usersFile.read()
-    users = set(fullText.split("\n"))
+editorsPath = os.path.abspath(editorsInputsDf["csvOutputPath"][0])
+membersPath = os.path.abspath(membersInputsDf["outputPath"][0])
+outputCsvPath = os.path.join(editorsPath.rsplit(os.sep, maxsplit = 1)[0], "final.csv")
 
-if userListPath2 != "":        
-    with open(userListPath2, "r", encoding = "utf-8") as usersFile:
-        fullText = usersFile.read()
-        users2 = fullText.split("\n")
-        for user in users2:
-            users.add(user)
+membersDf = pd.read_csv(membersPath, encoding = "utf-8")    
+editorsDf = pd.read_csv(editorsPath, encoding = "utf-8")
 
-if "" in users:
-    users.remove("")
-    
-df = pd.read_csv(csvPath, encoding = "utf-8")
+lowerSetMembers = lower_set(set(membersDf["member"]))
 toDrop = []
 
-lowerSet = lower_set(users)
-lowerSetDf = lower_set(list(df["user"]))
-for i in df.index:
-    if df["user"][i].lower() not in lowerSet:
+for i in editorsDf.index:
+    if editorsDf["user"][i].lower() not in lowerSetMembers:
         toDrop.append(i)
-        
-unaccounted_for = set()
-for user in lowerSet:
-    if user not in lowerSetDf:
-        unaccounted_for.add(user)
 
-print("Number of editors from edit history:", len(df))
-print("Number of participants from participant list(s):", len(users))
-print("Number of editors not in participant list(s):", len(toDrop))
-print("Number of participants not in edit history:", len(unaccounted_for))
+finalDf = editorsDf.drop(index = toDrop)
+finalDf.to_csv(outputCsvPath, index = False, encoding = "utf-8")        
 
-df.drop(index = toDrop, inplace = True)
-print("Dropped ", len(toDrop), " users from edit history data")
-df.to_csv(outputCsvPath, index = False, encoding = "utf-8")
-
+statsPath = os.path.join(projectRootDir, "stats.csv")
+NumberOfMembersNotInEditHistory = len(lowerSetMembers) - (len(editorsDf) - len(toDrop))
+with open(statsPath, "a", newline = "") as statsCsv:
+    csvWriter = csv.writer(statsCsv, quoting = csv.QUOTE_MINIMAL)
+    csvWriter.writerow([date.today(), projectName, len(editorsDf), len(lowerSetMembers), len(toDrop),\
+                        NumberOfMembersNotInEditHistory, NumberOfMembersNotInEditHistory * 100 / len(lowerSetMembers)])
 # def find_duplicates(l):
 #     count = dict()
 #     for elt in l:

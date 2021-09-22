@@ -10,11 +10,30 @@ import re
 from collections import OrderedDict
 import pandas as pd
 import os
+import sys
 
-inputsPath = "C:/users/madha/documents/wikiproject/retrieve_edit_history_input_vars.xlsx"
-projectRootDir = "C:/users/madha/documents/wikiproject"
-projectRootDir = os.path.abspath(projectRootDir)
-projectName = "Military History"
+def get_properties_from_file(filename):
+    properties = dict()
+    with open(filename) as f:
+        for line in f:
+            if "=" in line:
+                key, value = line.split("=", 1)
+                properties[key.strip()] = value.strip()
+    return properties
+
+try:
+    properties = get_properties_from_file(sys.argv[1])
+except IndexError:
+    raise Exception("Specify a properties file as an argument to this script.")
+
+inputsPath = os.path.abspath(properties["retrieveEditorsInputsPath"])
+projectRootDir = os.path.abspath(properties["projectRootDir"])
+projectName = properties["projectName"]
+
+inputsDf = pd.read_excel(inputsPath)
+inputsDf = inputsDf[inputsDf["wikiproject"] == projectName].reset_index(drop = True)
+
+csvOutputPath = os.path.abspath(inputsDf["csvOutputPath"][0])
 
 def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
     S = requests.Session()
@@ -30,12 +49,6 @@ def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
             "rvdir": "newer",
             "format": "xml"        
         }
-        
-    inputsDf = pd.read_excel(inputsPath)
-    inputsDf = inputsDf[inputsDf["wikiproject"] == projectName]
-    
-    csvOutputPath = os.path.abspath(inputsDf["csvOutputPath"][0])
-    csvOutputPath = os.path.join(csvOutputPath.rsplit(os.sep, maxsplit = 1)[0], "final.csv") 
     
     dfs = []
     
@@ -45,8 +58,6 @@ def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
             del PARAMS["rvcontinue"]
         except KeyError:
             pass      
-        lastTwoVarsInPath = csvOutputPath.rsplit(os.sep, maxsplit = 2)
-        revisionsOutputPath = os.path.join(projectRootDir, "revisions", lastTwoVarsInPath[-2], lastTwoVarsInPath[-1].split(".")[-2] + ".txt")
         
         revisions = []
         # get revisions
@@ -62,9 +73,10 @@ def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
             
         usernamesById = OrderedDict()
         joindateByUserId = OrderedDict()
+        commentByUserId = OrderedDict()
         sourcePage = []
         for elt in revisions:
-            match = re.search('user="([^"]*)" userid="([^"]*)" timestamp="([^"]*)" [^>]*>', elt)
+            match = re.search('user="([^"]*)" userid="([^"]*)" timestamp="([^"]*)" comment="([^"]*)" [^>]*>', elt)
             if match:
                 if re.search('[bB][oO][tT]$', match.group(1)):
                     continue
@@ -72,17 +84,14 @@ def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
                     usernamesById[match.group(2)] = match.group(1)
                 if match.group(2) not in joindateByUserId:
                     joindateByUserId[match.group(2)] = match.group(3)
+                if match.group(2) not in commentByUserId:
+                    commentByUserId[match.group(2)] = match.group(4)
                     sourcePage.append(PARAMS["titles"])
                 
         df = pd.DataFrame({"userid": list(usernamesById.keys()), "user": list(usernamesById.values()),\
-                           "firstEdit": list(joindateByUserId.values()), "page": sourcePage})
+                           "firstEdit": list(joindateByUserId.values()), "comment": list(commentByUserId.values()),\
+                               "page": sourcePage})
         dfs.append(df)
-        # df.to_csv(csvOutputPath, index = False, encoding = "utf-8")
-          
-        with open(revisionsOutputPath, "w", newline="", encoding = "utf-8") as ofile:
-            for elt in revisions:
-                ofile.write(elt)
-                ofile.write("\n")
     
     concat_no_duplicates(dfs, csvOutputPath)
     return
@@ -90,9 +99,9 @@ def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
 def concat_no_duplicates(dfs, outputPath):
 
     df = pd.concat(dfs, ignore_index = True)
-    df.sort_values("firstEdit", ignore_index = True, inplace = True)
     # debug
-    df.to_csv("C:/users/madha/documents/wikiproject/mil_hist_df_b4_sort.csv", index = False, encoding = "utf-8")
+    df.to_csv(os.path.join(csvOutputPath.rsplit(os.sep, maxsplit = 1)[0], "debug.csv"), index = False, encoding = "utf-8")
+    df.sort_values("firstEdit", ignore_index = True, inplace = True)
     setOfUsers = set()
     toDrop = []
     for i in df.index:
@@ -100,8 +109,6 @@ def concat_no_duplicates(dfs, outputPath):
             setOfUsers.add(df["userid"][i])
         else:
             toDrop.append(i)
-    
-    print(toDrop)
     
     df.drop(index = toDrop, inplace = True)
     df.to_csv(outputPath, index = False, encoding = "utf-8")
