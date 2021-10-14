@@ -1,4 +1,5 @@
 retrieveEditorsInputsPath = C:/users/madha/documents/wikiproject/retrieve_edit_history_input_vars.xlsx
 retrieveMembersInputsPath = C:/users/madha/documents/wikiproject/retrieve_members_input_vars.xlsx
 projectRootDir = C:/users/madha/documents/wikiproject
-projectName = Military History
+projectName = Film
+projectFilename = film

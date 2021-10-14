@@ -26,6 +26,11 @@ def get_properties_from_file(filename):
 def concat_no_duplicates(dfs, outputPath):
 
     df = pd.concat(dfs, ignore_index = True)
+    try:
+        os.makedirs(outputPath.rsplit(os.sep, maxsplit = 1)[0])
+        print("Creating necessary directories..")
+    except:
+        pass
     # debug
     df.to_csv(os.path.join(outputPath.rsplit(os.sep, maxsplit = 1)[0], "debug.csv"), index = False, encoding = "utf-8")
     df.sort_values("firstEdit", ignore_index = True, inplace = True)

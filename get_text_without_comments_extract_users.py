@@ -64,7 +64,7 @@ for i in inputsDf.index:
     R = S.get(url = URL, params = PARAMS)
     htmlCommentsRegex = '&lt;!--([^-]|-[^-]|--[^&\s]|--\s*&[^g]|--\s*&g[^t]|--\s*gt[^;])*--\s*&gt;'
     text = re.sub(htmlCommentsRegex, "", R.text)
-    foundUsers = re.findall(userRegex, text)
+    foundUsers = re.findall(userRegex, text, flags = re.IGNORECASE)
     for user in foundUsers:
         users.append(user)
         sourcePage.append(page)
