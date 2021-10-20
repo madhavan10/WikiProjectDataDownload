@@ -46,7 +46,7 @@ def concat_no_duplicates(dfs, outputPath):
     df.to_csv(outputPath, index = False, encoding = "utf-8")
     return
 
-def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
+def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName, projectFilename):
     S = requests.Session()
     URL = "https://en.wikipedia.org/w/api.php"
     PARAMS = {
@@ -64,7 +64,7 @@ def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
     inputsDf = pd.read_excel(inputsPath)
     inputsDf = inputsDf[inputsDf["wikiproject"] == projectName].reset_index(drop = True)
 
-    csvOutputPath = os.path.abspath(inputsDf["csvOutputPath"][0])
+    csvOutputPath = os.path.join(projectRootDir, "project_join", projectFilename, inputsDf["csvOutputPath"][0])
     
     dfs = []
     
@@ -112,11 +112,11 @@ def retrieve_revisions_build_dfs(inputsPath, projectRootDir, projectName):
     concat_no_duplicates(dfs, csvOutputPath)
     return
 
-def get_text_without_comments_extract_users(inputsPath, projectName):
+def get_text_without_comments_extract_users(inputsPath, projectRootDir, projectName, projectFilename):
     inputsDf = pd.read_excel(inputsPath)
     inputsDf = inputsDf[inputsDf["wikiproject"] == projectName].reset_index(drop = True)
     
-    membersListOutputPath = inputsDf["outputPath"][0]
+    membersListOutputPath = os.path.join(projectRootDir, "user_lists", projectFilename + ".csv")
     
     S = requests.Session()
     
@@ -149,7 +149,7 @@ def get_text_without_comments_extract_users(inputsPath, projectName):
         R = S.get(url = URL, params = PARAMS)
         htmlCommentsRegex = '&lt;!--([^-]|-[^-]|--[^&\s]|--\s*&[^g]|--\s*&g[^t]|--\s*gt[^;])*--\s*&gt;'
         text = re.sub(htmlCommentsRegex, "", R.text)
-        foundUsers = re.findall(userRegex, text)
+        foundUsers = re.findall(userRegex, text, flags = re.IGNORECASE)
         for user in foundUsers:
             users.append(user)
             sourcePage.append(page)
@@ -158,30 +158,35 @@ def get_text_without_comments_extract_users(inputsPath, projectName):
     outputsDf.to_csv(membersListOutputPath, index = False, encoding = "utf-8")
     return
 
-def lower_set(s):
+def decapitalize_set(s):
     result = set()
     for elt in s:
-        result.add(elt.lower())
+        lowered = elt[0].lower() + elt[1:] if len(elt) > 1 else elt.lower()
+        if lowered not in result:
+            result.add(lowered)
+        else:
+            print(lowered)
     return result
 
-def remove_unregistered_users(retrieveEditorsInputsPath, retrieveMembersInputsPath, projectRootDir, projectName):
+def remove_unregistered_users(retrieveEditorsInputsPath, retrieveMembersInputsPath, projectRootDir, projectName, projectFilename):
     editorsInputsDf = pd.read_excel(retrieveEditorsInputsPath)
     editorsInputsDf = editorsInputsDf[editorsInputsDf["wikiproject"] == projectName].reset_index(drop = True)
     membersInputsDf = pd.read_excel(retrieveMembersInputsPath)
     membersInputsDf = membersInputsDf[membersInputsDf["wikiproject"] == projectName].reset_index(drop = True)
     
-    editorsPath = os.path.abspath(editorsInputsDf["csvOutputPath"][0])
-    membersPath = os.path.abspath(membersInputsDf["outputPath"][0])
+    editorsPath = os.path.join(projectRootDir, "project_join", projectFilename, editorsInputsDf["csvOutputPath"][0])
+    membersPath = os.path.join(projectRootDir, "user_lists", projectFilename + ".csv")
     outputCsvPath = os.path.join(editorsPath.rsplit(os.sep, maxsplit = 1)[0], "final.csv")
     
     membersDf = pd.read_csv(membersPath, encoding = "utf-8")    
     editorsDf = pd.read_csv(editorsPath, encoding = "utf-8")
+    lowerSetMembers = decapitalize_set(set(membersDf["member"]))
     
-    lowerSetMembers = lower_set(set(membersDf["member"]))
     toDrop = []
-    
     for i in editorsDf.index:
-        if editorsDf["user"][i].lower() not in lowerSetMembers:
+        editor = editorsDf["user"][i]
+        decapitalized_editor = editor[0].lower() + editor[1:] if len(editor) > 1 else editor.lower()
+        if decapitalized_editor not in lowerSetMembers:
             toDrop.append(i)
     
     finalDf = editorsDf.drop(index = toDrop)
@@ -189,10 +194,10 @@ def remove_unregistered_users(retrieveEditorsInputsPath, retrieveMembersInputsPa
     
     statsPath = os.path.join(projectRootDir, "stats.csv")
     NumberOfMembersNotInEditHistory = len(lowerSetMembers) - (len(editorsDf) - len(toDrop))
-    with open(statsPath, "a", newline = "") as statsCsv:
+    with open(statsPath, "a", newline = "", encoding = "utf-8") as statsCsv:
         csvWriter = csv.writer(statsCsv, quoting = csv.QUOTE_MINIMAL)
         csvWriter.writerow([date.today(), projectName, len(editorsDf), len(lowerSetMembers), len(toDrop),\
-                            NumberOfMembersNotInEditHistory, NumberOfMembersNotInEditHistory * 100 / len(lowerSetMembers)])
+                            NumberOfMembersNotInEditHistory, round(NumberOfMembersNotInEditHistory * 100 / len(lowerSetMembers), 2)])
     
 try:
     properties = get_properties_from_file(sys.argv[1])
@@ -203,7 +208,8 @@ retrieveEditorsInputsPath = os.path.abspath(properties["retrieveEditorsInputsPat
 retrieveMembersInputsPath = os.path.abspath(properties["retrieveMembersInputsPath"])
 projectRootDir = os.path.abspath(properties["projectRootDir"])
 projectName = properties["projectName"]
+projectFilename = properties["projectFilename"]
 
-retrieve_revisions_build_dfs(retrieveEditorsInputsPath, projectRootDir, projectName)
-get_text_without_comments_extract_users(retrieveMembersInputsPath, projectName)
-remove_unregistered_users(retrieveEditorsInputsPath, retrieveMembersInputsPath, projectRootDir, projectName)
+retrieve_revisions_build_dfs(retrieveEditorsInputsPath, projectRootDir, projectName, projectFilename)
+get_text_without_comments_extract_users(retrieveMembersInputsPath, projectRootDir, projectName, projectFilename)
+remove_unregistered_users(retrieveEditorsInputsPath, retrieveMembersInputsPath, projectRootDir, projectName, projectFilename)

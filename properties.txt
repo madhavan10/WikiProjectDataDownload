@@ -1,5 +1,6 @@
 retrieveEditorsInputsPath = C:/users/madha/documents/wikiproject/retrieve_edit_history_input_vars.xlsx
 retrieveMembersInputsPath = C:/users/madha/documents/wikiproject/retrieve_members_input_vars.xlsx
 projectRootDir = C:/users/madha/documents/wikiproject
-projectName = Film
-projectFilename = film
+chromeDriver = C:/users/madha/chromedriver_win32/chromedriver.exe
+projectName = Biography
+projectFilename = biography

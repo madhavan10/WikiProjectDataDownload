@@ -11,6 +11,8 @@ import os
 import csv
 import sys
 import pandas as pd
+from selenium import webdriver
+from datetime import date
 
 def get_properties_from_file(filename):
     properties = dict()
@@ -34,6 +36,7 @@ def get_contribs_to_file(user, textOutputPath):
             "ucprop": "timestamp|title",
             "ucdir": "newer",
             "uclimit": "max",
+            "ucnamespace": "4", 
             "format": "xml"        
         }
     print(user)
@@ -79,7 +82,9 @@ def find_join_dates(textFile, joinDatesCSV, user, projectName):
                 with open(joinDatesCSV, "a", newline = "", encoding = "utf-8") as csvF:
                     csvWriter = csv.writer(csvF, quoting = csv.QUOTE_MINIMAL)
                     csvWriter.writerow([user, projectName, match.group(3), lineNo])
-                    break
+                    return True
+        return False
+
 try:
     properties = get_properties_from_file(sys.argv[1])
 except IndexError:
@@ -87,8 +92,16 @@ except IndexError:
 
 projectRootDir = os.path.abspath(properties["projectRootDir"])
 projectFilename = properties["projectFilename"]
+chromeDriverPath = properties["chromeDriver"]
 joinDatesCSV = os.path.join(projectRootDir, "project_join", projectFilename, "way2.csv")
+if os.path.exists(joinDatesCSV):
+    os.remove(joinDatesCSV)
+with open(joinDatesCSV, "w", newline = "", encoding = "utf-8") as f:
+    fWriter = csv.writer(f, quoting = csv.QUOTE_MINIMAL)
+    fWriter.writerow(["user", "Project Name", "Join Date", "Line number in contributions file"])
+
 projectName = properties["projectName"]
+statsPath = os.path.join(projectRootDir, "stats.csv")
 
 userListDf = pd.read_csv(os.path.join(projectRootDir, "user_lists", projectFilename + ".csv"), encoding = "utf-8")
 userIdLookupPath = os.path.join(projectRootDir, "user_contributions", projectFilename, "user_id_lookup.csv")
@@ -100,14 +113,41 @@ if not os.path.exists(userIdLookupPath):
         users.append(userListDf["member"][i])
         user_ids.append(i)
     newLookupDf = pd.DataFrame({"user": users, "lookup_id": user_ids})
+    try:
+        os.makedirs(userIdLookupPath.rsplit(os.sep, maxsplit = 1)[0])
+        print("Creating necessary directories (contributions)")
+    except FileExistsError:
+        pass
     newLookupDf.to_csv(userIdLookupPath, index = False, encoding = "utf-8")
 
 userIdLookupDf = pd.read_csv(userIdLookupPath, encoding = "utf-8")
 userIdLookup = {}
 for i in userIdLookupDf.index:
-    userIdLookup[userIdLookupDf["user"][i]] = userIdLookupDf["lookup_id"][i]
+    username = userIdLookupDf["user"][i]
+    username = username[0].upper() + username[1:] if len(username) > 1 else username.upper()
+    userIdLookup[username] = userIdLookupDf["lookup_id"][i]
 
+count = 0
 for user in userIdLookup.keys():
     textOutputPath = os.path.join(projectRootDir, "user_contributions", projectFilename, str(userIdLookup[user]) + ".txt")
     get_contribs_to_file(user, textOutputPath)
-    find_join_dates(textOutputPath, joinDatesCSV, user, projectName)
+    if os.path.getsize(textOutputPath) == 0:
+        # check for changed username
+        driver = webdriver.Chrome(executable_path = chromeDriverPath)
+        driver.get("https://en.wikipedia.org/wiki/User:" + user)
+        usernameMatch = re.search('User:(.*) - Wikipedia', driver.title)
+        userNormalized = user[0].upper() + user[1:]
+        if usernameMatch and usernameMatch.group(1) != userNormalized:
+            driver.close()
+            os.remove(textOutputPath)
+            get_contribs_to_file(usernameMatch.group(1), textOutputPath)
+            
+    if find_join_dates(textOutputPath, joinDatesCSV, user, projectName):
+        count += 1
+
+membersWithNoDOJ = len(userIdLookup) - count
+with open(statsPath, "a", newline = "", encoding = "utf-8") as statsCsv:
+    writer = csv.writer(statsCsv, quoting = csv.QUOTE_MINIMAL)
+    writer.writerow([date.today(), projectName, "", len(userIdLookup), "",\
+                    membersWithNoDOJ, round(membersWithNoDOJ * 100 / len(userIdLookup), 2)])
+
