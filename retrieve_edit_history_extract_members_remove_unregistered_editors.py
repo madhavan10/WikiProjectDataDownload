@@ -151,7 +151,8 @@ def get_text_without_comments_extract_users(inputsPath, projectRootDir, projectN
         text = re.sub(htmlCommentsRegex, "", R.text)
         foundUsers = re.findall(userRegex, text, flags = re.IGNORECASE)
         for user in foundUsers:
-            users.append(user)
+            # strip trailing whitespace from username
+            users.append(user.rstrip())
             sourcePage.append(page)
             
     outputsDf = pd.DataFrame({"member": users, "source": sourcePage})
@@ -164,8 +165,6 @@ def decapitalize_set(s):
         lowered = elt[0].lower() + elt[1:] if len(elt) > 1 else elt.lower()
         if lowered not in result:
             result.add(lowered)
-        else:
-            print(lowered)
     return result
 
 def remove_unregistered_users(retrieveEditorsInputsPath, retrieveMembersInputsPath, projectRootDir, projectName, projectFilename):
@@ -204,9 +203,9 @@ try:
 except IndexError:
     raise Exception("Specify a properties file as an argument to this script.")
     
-retrieveEditorsInputsPath = os.path.abspath(properties["retrieveEditorsInputsPath"])
-retrieveMembersInputsPath = os.path.abspath(properties["retrieveMembersInputsPath"])
-projectRootDir = os.path.abspath(properties["projectRootDir"])
+retrieveEditorsInputsPath = properties["retrieveEditorsInputsPath"]
+retrieveMembersInputsPath = properties["retrieveMembersInputsPath"]
+projectRootDir = properties["projectRootDir"]
 projectName = properties["projectName"]
 projectFilename = properties["projectFilename"]
 

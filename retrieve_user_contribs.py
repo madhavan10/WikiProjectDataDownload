@@ -90,7 +90,7 @@ try:
 except IndexError:
     raise Exception("Specify a properties file as an argument to this script.")
 
-projectRootDir = os.path.abspath(properties["projectRootDir"])
+projectRootDir = properties["projectRootDir"]
 projectFilename = properties["projectFilename"]
 chromeDriverPath = properties["chromeDriver"]
 joinDatesCSV = os.path.join(projectRootDir, "project_join", projectFilename, "way2.csv")
