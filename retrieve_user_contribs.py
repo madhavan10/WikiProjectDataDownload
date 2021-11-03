@@ -65,7 +65,7 @@ def get_contribs_to_file(user, textOutputPath):
     return
 
 def find_join_dates(textFile, joinDatesCSV, user, projectName):
-    regex = '<item userid="[^"]*" user="[^"]*" ns="4" title="Wikipedia:WikiProject ('\
+    regex = '<item userid="[^"]*" user="([^"]*)" ns="4" title="Wikipedia:WikiProject ('\
         + projectName + '|' + projectName + '[^"]*(members?|participants?)[^"]*)"'\
         + ' timestamp="([^"]*)"'
     with open(textFile, "r", encoding = "utf-8") as userContribsF:
@@ -81,7 +81,7 @@ def find_join_dates(textFile, joinDatesCSV, user, projectName):
                     pass
                 with open(joinDatesCSV, "a", newline = "", encoding = "utf-8") as csvF:
                     csvWriter = csv.writer(csvF, quoting = csv.QUOTE_MINIMAL)
-                    csvWriter.writerow([user, projectName, match.group(3), lineNo])
+                    csvWriter.writerow([match.group(1), projectName, match.group(4), lineNo])
                     return True
         return False
 
@@ -110,7 +110,9 @@ if not os.path.exists(userIdLookupPath):
     users = []
     user_ids = []
     for i in userListDf.index:
-        users.append(userListDf["member"][i])
+        username = userListDf["member"][i]
+        username = username[0].upper() + username[1:] if len(username) > 1 else username.upper()
+        users.append(username)
         user_ids.append(i)
     newLookupDf = pd.DataFrame({"user": users, "lookup_id": user_ids})
     try:
@@ -136,6 +138,8 @@ for user in userIdLookup.keys():
         driver = webdriver.Chrome(executable_path = chromeDriverPath)
         driver.get("https://en.wikipedia.org/wiki/User:" + user)
         usernameMatch = re.search('User:(.*) - Wikipedia', driver.title)
+        if not usernameMatch:
+            usernameMatch = re.search('User talk:(.*) - Wikipedia', driver.title)
         userNormalized = user[0].upper() + user[1:]
         if usernameMatch and usernameMatch.group(1) != userNormalized:
             driver.close()
