@@ -65,7 +65,7 @@ def get_contribs_to_file(user, textOutputPath):
     return
 
 def find_join_dates(textFile, joinDatesCSV, user, projectName):
-    regex = '<item userid="[^"]*" user="([^"]*)" ns="4" title="Wikipedia:WikiProject ('\
+    regex = '<item userid="[^"]*" user="[^"]*" ns="4" title="Wikipedia:WikiProject ('\
         + projectName + '|' + projectName + '[^"]*(members?|participants?)[^"]*)"'\
         + ' timestamp="([^"]*)"'
     with open(textFile, "r", encoding = "utf-8") as userContribsF:
@@ -81,7 +81,7 @@ def find_join_dates(textFile, joinDatesCSV, user, projectName):
                     pass
                 with open(joinDatesCSV, "a", newline = "", encoding = "utf-8") as csvF:
                     csvWriter = csv.writer(csvF, quoting = csv.QUOTE_MINIMAL)
-                    csvWriter.writerow([match.group(1), projectName, match.group(4), lineNo])
+                    csvWriter.writerow([user, projectName, match.group(3), lineNo])
                     return True
         return False
 
@@ -140,11 +140,12 @@ for user in userIdLookup.keys():
         usernameMatch = re.search('User:(.*) - Wikipedia', driver.title)
         if not usernameMatch:
             usernameMatch = re.search('User talk:(.*) - Wikipedia', driver.title)
-        userNormalized = user[0].upper() + user[1:]
+        userNormalized = user[0].upper() + user[1:] if len(user) > 1 else user.upper()
         if usernameMatch and usernameMatch.group(1) != userNormalized:
             driver.close()
             os.remove(textOutputPath)
-            get_contribs_to_file(usernameMatch.group(1), textOutputPath)
+            user = usernameMatch.group(1)
+            get_contribs_to_file(user, textOutputPath)
             
     if find_join_dates(textOutputPath, joinDatesCSV, user, projectName):
         count += 1
