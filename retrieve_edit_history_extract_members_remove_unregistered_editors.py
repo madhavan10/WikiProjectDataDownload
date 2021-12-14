@@ -120,14 +120,9 @@ def get_text_without_comments_extract_users(inputsPath, projectRootDir, projectN
     
     S = requests.Session()
     
-    #outputPath = r"C:\users\madha\documents\wikiproject\user_lists\military_history_members_inactive.txt"
-    
     URL = "https://en.wikipedia.org/w/api.php"
     
-    #page = "Wikipedia:WikiProject Mathematics/Participants"
-    
-    users = []
-    sourcePage = []
+    users = OrderedDict()
     
     for i in inputsDf.index:
     
@@ -151,11 +146,12 @@ def get_text_without_comments_extract_users(inputsPath, projectRootDir, projectN
         text = re.sub(htmlCommentsRegex, "", R.text)
         foundUsers = re.findall(userRegex, text, flags = re.IGNORECASE)
         for user in foundUsers:
+            user = user[0].upper() + user[1:] if len(user) > 1 else user.upper()
             # strip trailing whitespace from username
-            users.append(user.rstrip())
-            sourcePage.append(page)
+            user = user.rstrip()
+            users[user] = page
             
-    outputsDf = pd.DataFrame({"member": users, "source": sourcePage})
+    outputsDf = pd.DataFrame({"member": users.keys(), "source": users.values()})
     outputsDf.to_csv(membersListOutputPath, index = False, encoding = "utf-8")
     return
 

@@ -93,6 +93,7 @@ except IndexError:
 projectRootDir = properties["projectRootDir"]
 projectFilename = properties["projectFilename"]
 chromeDriverPath = properties["chromeDriver"]
+driver = webdriver.Chrome(executable_path = chromeDriverPath)
 joinDatesCSV = os.path.join(projectRootDir, "project_join", projectFilename, "way2.csv")
 if os.path.exists(joinDatesCSV):
     os.remove(joinDatesCSV)
@@ -135,7 +136,6 @@ for user in userIdLookup.keys():
     get_contribs_to_file(user, textOutputPath)
     if os.path.getsize(textOutputPath) == 0:
         # check for changed username
-        driver = webdriver.Chrome(executable_path = chromeDriverPath)
         driver.get("https://en.wikipedia.org/wiki/User:" + user)
         usernameMatch = re.search('User:(.*) - Wikipedia', driver.title)
         if not usernameMatch:
