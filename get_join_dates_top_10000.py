@@ -53,7 +53,9 @@ if user in usernameToProjectMembership.keys():
                 continue
             title = row[TITLE_INDEX]
             for i in range(len(regexList)):
-                match = re.search(regexList[i], title, flags = re.IGNORECASE)
+                if ifMatched[i]:
+                    continue
+                match = re.fullmatch(regexList[i], title, flags = re.IGNORECASE)
                 if match:
                     joinDates.append(row[TIMESTAMP_INDEX])
                     titles.append(title)
