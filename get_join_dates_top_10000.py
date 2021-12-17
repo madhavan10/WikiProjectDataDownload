@@ -40,7 +40,7 @@ if user in usernameToProjectMembership.keys():
     titles = []
     matchedProjects = []
     for project in projectList:
-        regex = "Wikipedia:WikiProject (" + project + "|" + project + "*(members?|participants?)*)"
+        regex = "Wikipedia:WikiProject (" + project + "|" + project + ".*(members?|participants?).*)"
         regexList.append(regex)
         ifMatched.append(False)
     with open(contribsCsvPath, "r", newline = "", encoding = "utf-8") as contribsCsv:
