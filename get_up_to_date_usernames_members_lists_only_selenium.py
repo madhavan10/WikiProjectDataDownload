@@ -20,18 +20,24 @@ class UnexpectedFormatException(Exception):
     pass
 
 def getRecentUsername(username, driver):
+    
+    def strip_and_upper(s):
+        s = s.strip()
+        s = s[0].upper() + s[1:] if len(s) > 1 else s.upper()
+        return s
+
     driver.get("https://en.wikipedia.org/wiki/User:" + username)
     usernameMatch = re.search('User:(.*) - Wikipedia', driver.title)
     if not usernameMatch:
         # look for redirect to talk-page
-        usernameMatch = re.search('User talk:(.*) - Wikipedia')
+        usernameMatch = re.search('User talk:(.*) - Wikipedia', driver.title)
         if not usernameMatch:
             return None
         else:
-            return usernameMatch.group(1)
+            return strip_and_upper(usernameMatch.group(1))
     elif usernameMatch.group(1) != username:
         # redirected to different user page
-        return usernameMatch.group(1)
+        return strip_and_upper(usernameMatch.group(1))
     else:
         try:
             userdoesnotexist_line = driver.find_element(By.CLASS_NAME, "mw-userpage-userdoesnotexist")
@@ -122,7 +128,6 @@ passwordBox.send_keys("p1tm0qpgu" + Keys.ENTER)
 for i in membersListDf.index:
     member = membersListDf["member"][i]
     if member not in usernameToMostRecentUsername.keys() and member not in usernamesInvalid.keys():
-        print(i, member)
         try:
             recentUsername = getRecentUsername(member, driver)
         except:
@@ -137,3 +142,4 @@ for i in membersListDf.index:
         else:
             usernameToMostRecentUsername[member] = recentUsername
             writerUsernamesMap.writerow([member, recentUsername])
+        print(i, member, ":", recentUsername)
