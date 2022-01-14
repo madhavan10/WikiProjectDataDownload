@@ -15,11 +15,21 @@ import pandas as pd
 from collections import OrderedDict
 import os
 import csv
+import sys
+import traceback
 
 class UnexpectedFormatException(Exception):
     pass
 
 def getRecentUsername(username, driver):
+    recentUsername = queryRecentUsername(username, driver)
+    oldUsername = username
+    while recentUsername != None and recentUsername != oldUsername:
+        oldUsername = recentUsername
+        recentUsername = queryRecentUsername(recentUsername, driver)
+    return recentUsername
+    
+def queryRecentUsername(username, driver):
     
     def strip_and_upper(s):
         s = s.strip()
@@ -67,21 +77,11 @@ def getRecentUsername(username, driver):
                 if new_userpage_title.startswith("User:"):
                     return new_userpage_title[5:]
                 else:
-                    raise ("Unexpected format: move line: new userpage title")
+                    raise UnexpectedFormatException("Unexpected format: move line: new userpage title")
             else:
                 raise UnexpectedFormatException("Unexpected format: move line")
         else:
             return None
-
-def testGetRecentUsername(driver):
-    name = "AnabelCosta"
-    print(name, ":", getRecentUsername(name, driver))
-    name = "Trilobita"
-    print(name, ":", getRecentUsername(name, driver))
-    name = "Darkliight"
-    print(name, ":", getRecentUsername(name, driver))
-    name = "Malke 2010"
-    print(name, ":", getRecentUsername(name, driver))
 
 #setup selenium webdriver
 chrome_options = Options()
@@ -93,29 +93,11 @@ driver = webdriver.Chrome(executable_path = chromeDriverPath, options = chrome_o
 membersListPath = "/home/madhavso/wikipedia_data/user_lists/complete_user_list.csv"
 usernamesMapCsvPath = "/home/madhavso/wikipedia_data/user_lists/usernamesMap.csv"
 usernamesInvalidPath = "/home/madhavso/wikipedia_data/user_lists/usernamesInvalid.csv"
-
-usernameToMostRecentUsername = OrderedDict()
-usernamesInvalid = OrderedDict()
+failedQueriesPath = "/home/madhavso/wikipedia_data/user_lists/failedQueries.txt"
 
 membersListDf = pd.read_csv(membersListPath, encoding = "utf-8")
-if os.path.exists(usernamesInvalidPath):
-    #read in stored invalid usernames
-    usernamesInvalidDf = pd.read_csv(usernamesInvalidPath, encoding = "utf-8")
-    for name in usernamesInvalidDf["username"]:
-        usernamesInvalid[name] = None
-
 usernamesMapPathExists = os.path.exists(usernamesMapCsvPath)
-usernamesMapCsv = open(usernamesMapCsvPath, "a", newline = "", encoding = "utf-8")
-writerUsernamesMap = csv.writer(usernamesMapCsv, quoting = csv.QUOTE_MINIMAL)
-
-if usernamesMapPathExists:
-    #read in stored username mappings
-    usernamesMapDf = pd.read_csv(usernamesMapCsvPath, encoding = "utf-8")
-    for i in usernamesMapDf.index:
-        usernameToMostRecentUsername[usernamesMapDf["username"][i]] = usernamesMapDf["mostRecentUsername"][i]
-else:
-    #insert header
-    writerUsernamesMap.writerow(["username", "mostRecentUsername"])
+usernamesInvalidPathExists = os.path.exists(usernamesInvalidPath)
 
 #login to Wikipedia
 driver.get("https://en.wikipedia.org/w/index.php?title=Special:UserLogin")
@@ -124,22 +106,50 @@ usernameBox.send_keys("Msomanat")
 passwordBox = driver.find_element(By.NAME, "wpPassword")
 passwordBox.send_keys("p1tm0qpgu" + Keys.ENTER)
 
-#for each member get up-to-date username
-for i in membersListDf.index:
-    member = membersListDf["member"][i]
-    if member not in usernameToMostRecentUsername.keys() and member not in usernamesInvalid.keys():
-        try:
-            recentUsername = getRecentUsername(member, driver)
-        except:
-            print("getRecentUsername threw exception for member:", member)
-            #save username mappings and invalid username list
-            usernamesInvalidDf = pd.DataFrame({"username": usernamesInvalid.keys()})
-            usernamesInvalidDf.to_csv(usernamesInvalidPath, index = False, encoding = "utf-8")
-            usernamesMapCsv.close()
-            raise
-        if recentUsername == None:
-            usernamesInvalid[member] = None
+usernameToMostRecentUsername = OrderedDict()
+usernamesInvalid = OrderedDict()
+
+with open(usernamesMapCsvPath, "a", newline = "", encoding = "utf-8") as usernamesMapCsv:
+    writerUsernamesMap = csv.writer(usernamesMapCsv, quoting = csv.QUOTE_MINIMAL)
+    if usernamesMapPathExists:
+        #read in stored username mappings
+        usernamesMapDf = pd.read_csv(usernamesMapCsvPath, encoding = "utf-8")
+        for i in usernamesMapDf.index:
+            usernameToMostRecentUsername[usernamesMapDf["username"][i]] = usernamesMapDf["mostRecentUsername"][i]
+    else:
+        #insert header
+        writerUsernamesMap.writerow(["username", "mostRecentUsername"])
+    
+    with open(usernamesInvalidPath, "a", newline = "", encoding = "utf-8") as usernamesInvalidCsv:
+        writerUsernamesInvalid = csv.writer(usernamesInvalidCsv, quoting = csv.QUOTE_MINIMAL)
+        if usernamesInvalidPathExists:
+            #read in stored invalid usernames
+            usernamesInvalidDf = pd.read_csv(usernamesInvalidPath, encoding = "utf-8")
+            for name in usernamesInvalidDf["username"]:
+                usernamesInvalid[name] = None
         else:
-            usernameToMostRecentUsername[member] = recentUsername
-            writerUsernamesMap.writerow([member, recentUsername])
-        print(i, member, ":", recentUsername)
+            #insert header
+            writerUsernamesInvalid.writerow(["username"])
+        
+        with open(failedQueriesPath, "w", newline = "", encoding = "utf-8") as failedQueriesLog:
+            
+            #for each member get up-to-date username
+            for i in membersListDf.index:
+                member = membersListDf["member"][i]
+                if member not in usernameToMostRecentUsername.keys() and member not in usernamesInvalid.keys():
+                    try:
+                        recentUsername = getRecentUsername(member, driver)
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        failedQueriesLog.write(str(i) + "\n")
+                        failedQueriesLog.write(member + "\n")
+                        traceback.print_tb(sys.exc_info()[2], file = failedQueriesLog)
+                        continue
+                    if recentUsername == None:
+                        usernamesInvalid[member] = None
+                        writerUsernamesInvalid.writerow([member])
+                    else:
+                        usernameToMostRecentUsername[member] = recentUsername
+                        writerUsernamesMap.writerow([member, recentUsername])
+                    print(i, member, ":", recentUsername)
