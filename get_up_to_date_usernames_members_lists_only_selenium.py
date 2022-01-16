@@ -24,9 +24,14 @@ class UnexpectedFormatException(Exception):
 def getRecentUsername(username, driver):
     recentUsername = queryRecentUsername(username, driver)
     oldUsername = username
+    allNames = []
     while recentUsername != None and recentUsername != oldUsername:
+        allNames.append(oldUsername)
         oldUsername = recentUsername
         recentUsername = queryRecentUsername(recentUsername, driver)
+        if recentUsername in allNames:
+            #infinite loop
+            break
     return recentUsername
     
 def queryRecentUsername(username, driver):
@@ -140,6 +145,7 @@ with open(usernamesMapCsvPath, "a", newline = "", encoding = "utf-8") as usernam
                     try:
                         recentUsername = getRecentUsername(member, driver)
                     except KeyboardInterrupt:
+                        print("Stopped execution on user:", member)
                         raise
                     except:
                         failedQueriesLog.write(str(i) + "\n")
