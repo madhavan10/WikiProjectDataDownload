@@ -141,6 +141,8 @@ with open(usernamesMapCsvPath, "a", newline = "", encoding = "utf-8") as usernam
             #for each member get up-to-date username
             for i in membersListDf.index:
                 member = membersListDf["member"][i]
+                if pd.isna(member):
+                    continue
                 if member not in usernameToMostRecentUsername.keys() and member not in usernamesInvalid.keys():
                     try:
                         recentUsername = getRecentUsername(member, driver)
