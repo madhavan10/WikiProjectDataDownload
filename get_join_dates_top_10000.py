@@ -53,7 +53,8 @@ for file in os.listdir(os.path.join(topEditorsRootDir, "contributions")):
             projectRegexVersion = projectRegexVersion.replace("+", "\\+")
             projectRegexVersion = projectRegexVersion.replace("(", "\\(")
             projectRegexVersion = projectRegexVersion.replace(")", "\\)")
-            regex = "Wikipedia:WikiProject (" + projectRegexVersion + "|" + projectRegexVersion + ".*(members?|participants?).*)"
+            regex = "Wikipedia:(" + projectRegexVersion + "|" + projectRegexVersion +\
+                ".*(members?|participants?|contributors|volunteers|roster).*)"
             regexList.append(regex)
             ifMatched.append(False)
         with open(contribsCsvPath, "r", newline = "", encoding = "utf-8") as contribsCsv:
