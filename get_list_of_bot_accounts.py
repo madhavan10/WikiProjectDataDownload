@@ -22,11 +22,13 @@ usernames = []
 botTags = []
 botTagFound = []
 os.chdir("/home/madhavso/wikipedia_data/top_editors/contributions/rest")
+i = 1
 for file in os.listdir():
     split = file.rsplit(".", maxsplit = 1)
     if split[-1] != "csv":
         continue
-    print(file)
+    print(i, file)
+    i += 1
     username = usernameLookup[int(split[0])]
         
     S = requests.Session()
@@ -42,7 +44,7 @@ for file in os.listdir():
                 "format": "xml"        
             }
     R = S.get(url = URL, params = PARAMS)
-    botRegex = "\{\{bot[^\}]*\}\}"
+    botRegex = "\{\{\s*bot\s*(\|[^\}])*\}\}|\{\{\s*retired\s*\|\s*bot\s*=\s*yes\s*\}\}"
     botMatch = re.search(botRegex, R.text, flags = re.IGNORECASE)
     if botMatch:
         botTags.append(botMatch.group(0))
