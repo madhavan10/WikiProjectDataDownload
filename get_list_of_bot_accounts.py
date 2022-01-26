@@ -44,7 +44,7 @@ for file in os.listdir():
                 "format": "xml"        
             }
     R = S.get(url = URL, params = PARAMS)
-    botRegex = "\{\{\s*bot\s*(\|[^\}])*\}\}|\{\{\s*retired\s*\|\s*bot\s*=\s*yes\s*\}\}"
+    botRegex = "\{\{\s*bot\s*(\|[^\}]*)*\}\}|\{\{\s*retired\s*\|\s*bot\s*=\s*yes\s*\}\}"
     botMatch = re.search(botRegex, R.text, flags = re.IGNORECASE)
     if botMatch:
         botTags.append(botMatch.group(0))
