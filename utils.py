@@ -22,10 +22,10 @@ def getRecentUsername(username, driver):
             return s
 
         driver.get("https://en.wikipedia.org/wiki/User:" + username)
-        usernameMatch = re.search('User:(.*) - Wikipedia', driver.title)
+        usernameMatch = re.search('[Uu]ser\s*:\s*(.*) - Wikipedia', driver.title)
         if not usernameMatch:
             # look for redirect to talk-page
-            usernameMatch = re.search('User talk:(.*) - Wikipedia', driver.title)
+            usernameMatch = re.search('[Uu]ser talk\s*:\s*(.*) - Wikipedia', driver.title)
             if not usernameMatch:
                 return None
             else:

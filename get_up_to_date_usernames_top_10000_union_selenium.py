@@ -54,11 +54,12 @@ with open(usernamesMapPath, "a", newline = "", encoding = "utf-8") as usernamesM
             usernamesMap[usernamesMapDf["username"][i]] = usernamesMapDf["mostRecentUsername"][i]
     
     with open(failedQueriesPath, "w", newline="", encoding = "utf-8") as failedQueriesLog:        
-        i = 1
+        i = 0
         for file in os.listdir():
             split = file.rsplit(".", maxsplit = 1)
             if split[-1] != "csv":
                 continue
+            i += 1
             username = lookupIdToName[int(split[0])]
             if username in usernamesMap.keys():
                 continue
@@ -71,8 +72,9 @@ with open(usernamesMapPath, "a", newline = "", encoding = "utf-8") as usernamesM
                 failedQueriesLog.write(split[0] + "\n")
                 failedQueriesLog.write(username + "\n")
                 traceback.print_tb(sys.exc_info()[2], file = failedQueriesLog)
+                continue
+            usernamesMap[username] = mostRecentUsername
             writer.writerow([username, mostRecentUsername])
             print(i, split[0], username, mostRecentUsername, sep = " : ")
-    
 
 
