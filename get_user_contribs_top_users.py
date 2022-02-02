@@ -10,13 +10,16 @@ import csv
 import pandas as pd
 import os
 
-userNumberLookupDf = pd.read_csv(r"C:\users\madha\documents\wikiproject\top_editors\1-10000_union_lookup.csv", encoding = "utf-8")
+userNumberLookupDf = pd.read_csv("/home/madhavso/wikipedia_data/user_lists/1-10000_lookup.csv", encoding = "utf-8")
 userNumberLookup = {}
 for i in userNumberLookupDf.index:
     userNumberLookup[userNumberLookupDf["user"][i]] = userNumberLookupDf["userNumber"][i]
 
 for user in userNumberLookup:
-    userCsv = "C:\\users\\madha\\documents\\wikiproject\\top_editors\\debug\\" + str(userNumberLookup[user]) + ".csv"
+    userCsv = "/home/madhavso/wikipedia_data/top_editors/contributions/" + str(userNumberLookup[user]) + ".csv"
+    if os.path.exists(userCsv) and os.path.getsize(userCsv) != 0:
+        print(userCsv, " already exists")
+        continue
     print(user, userCsv.rsplit(os.sep, maxsplit = 1)[-1])
     with open(userCsv, "w", newline = "", encoding = "utf-8") as userCsvF:
         writer = csv.writer(userCsvF, quoting = csv.QUOTE_MINIMAL)
@@ -40,17 +43,17 @@ for user in userNumberLookup:
         json = R.json()
         if "query" in json.keys() and "usercontribs" in json["query"].keys():        
             for contrib in json["query"]["usercontribs"]:
-                user = contrib["user"]
-                userid = contrib["userid"]
-                timestamp = contrib["timestamp"]
-                ns = contrib["ns"]
-                pageid = contrib["pageid"]
-                title = contrib["title"]            
+                user = contrib["user"] if "user" in contrib.keys() else ""
+                userid = contrib["userid"] if "user" in contrib.keys() else -1
+                timestamp = contrib["timestamp"] if "timestamp" in contrib.keys() else ""
+                ns = contrib["ns"] if "ns" in contrib.keys() else -1
+                pageid = contrib["pageid"] if "pageid" in contrib.keys() else -1
+                title = contrib["title"] if "title" in contrib.keys() else ""            
                 comment = contrib["comment"] if "comment" in contrib.keys() else ""
-                revid = contrib["revid"]
-                parentid = contrib["parentid"]
-                size = contrib["size"]
-                sizediff = contrib["sizediff"]
+                revid = contrib["revid"] if "revid" in contrib.keys() else -1
+                parentid = contrib["parentid"] if "parentid" in contrib.keys() else -1
+                size = contrib["size"] if "size" in contrib.keys() else -1
+                sizediff = contrib["sizediff"] if "sizediff" in contrib.keys() else 0
                 contribs.append((user, userid, timestamp, ns, pageid, title, comment, revid, parentid, size, sizediff))
             with open(userCsv, "a", newline = "", encoding = "utf-8") as userCsvF:
                 writer = csv.writer(userCsvF, quoting = csv.QUOTE_MINIMAL)
