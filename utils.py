@@ -8,6 +8,8 @@ Created on Thu Jan 27 14:04:12 2022
 import re
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+import csv
+import os
 
 class UnexpectedFormatException(Exception):
     pass
@@ -79,3 +81,80 @@ def getRecentUsername(username, driver):
             #infinite loop
             break
     return recentUsername
+
+def merge(ifilename1, ifilename2, ofilename):
+    USERNAME_INDEX = 0
+    USERID_INDEX = 1
+    TIMESTAMP_INDEX = 2
+    
+    # get username and userid from file 2
+    with open(ifilename2, "r", newline = "", encoding = "utf-8") as tempFile2:
+        tempReader = csv.reader(tempFile2)
+        next(tempReader)
+        tempRow = next(tempReader)
+        username = tempRow[USERNAME_INDEX]
+        userid = tempRow[USERID_INDEX]
+        
+    secondMerge = (ifilename2 == ofilename) # merging file 1 with the result of a previous merge
+    if secondMerge:
+        ofilename = ofilename.rsplit(".", maxsplit = 1)[0] + "_tmp.csv"
+    with open(ifilename1, "r", newline = "", encoding = "utf-8") as file1:
+        reader1 = csv.reader(file1)
+        next(reader1) # skip header
+        with open(ifilename2, "r", newline = "", encoding = "utf-8") as file2:
+            reader2 = csv.reader(file2)
+            header = next(reader2) # skip reader
+            with open(ofilename, "w", newline = "", encoding = "utf-8") as ofile:
+                writer = csv.writer(ofile, quoting = csv.QUOTE_MINIMAL)
+                writer.writerow(header)
+                eof1 = False
+                eof2 = False
+                getNext1 = True # determines whether to move to next row of file1
+                getNext2 = True # same as above for file2
+                while not eof1 and not eof2:
+                    if getNext1:
+                        try:
+                            row1 = next(reader1)
+                            # switch content of user, userid columns to match file 2
+                            row1[USERNAME_INDEX] = username
+                            row1[USERID_INDEX] = userid
+                        except StopIteration:
+                            eof1 = True
+                            row1 = None
+                    if getNext2:
+                        try:
+                            row2 = next(reader2)
+                        except StopIteration:
+                            eof2 = True
+                            row2 = None
+                    if row1 == None and row2 == None:
+                        # loop will exit
+                        continue
+                    elif row1 == None:
+                        # write one last row before exiting loop
+                        writer.writerow(row2)
+                    elif row2 == None:
+                        # same as above
+                        writer.writerow(row1)
+                    else:
+                        if row1[TIMESTAMP_INDEX] <= row2[TIMESTAMP_INDEX]:
+                            writer.writerow(row1)
+                            getNext1 = True
+                            getNext2 = False
+                        else:
+                            writer.writerow(row2)
+                            getNext2 = True
+                            getNext1 = False
+                if not eof1:
+                    for row in reader1:
+                        # switch content of user, userid columns to match file 2
+                        row[USERNAME_INDEX] = username
+                        row[USERID_INDEX] = userid
+                        writer.writerow(row)
+                if not eof2:
+                    for row in reader2:
+                        writer.writerow(row)
+    if secondMerge:
+        # replace merged file from previous merge with file from this merge
+        os.rename(ofilename, ifilename2)
+    return

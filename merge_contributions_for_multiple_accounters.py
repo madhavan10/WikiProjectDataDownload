@@ -5,23 +5,16 @@ Created on Thu Jan 27 23:24:13 2022
 @author: madha
 """
 
-import csv
 import pandas as pd
 from collections import OrderedDict
 import os
-import sys # for errors
-import traceback # for errors
-
-# TODO:
-# 1) How to load saved newLookup table file and avoid repeating 
-#    already-completed merges?
-# 2) Try-except, save state of newLookup table using DataFrame.to_csv 
-        
+from utils import merge
 
 # input paths
 usernameMapPath = "/home/madhavso/wikipedia_data/user_lists/usernamesMapTopEditors.csv"
-lookupPath = "/home/madhavso/wikipedia_data/user_lists/1-10000_union_lookup.csv"
+lookupPath = "/home/madhavso/wikipedia_data/user_lists/1-10000_union_lookup_updated.csv"
 newLookupPath = "/home/madhavso/wikipedia_data/user_lists/mergedFilesLookup.csv"
+currentDir = "/home/madhavso/wikipedia_data/top_editors/contributions"
 
 # vars
 usernameMapDf = pd.read_csv(usernameMapPath, encoding = "utf-8")
@@ -34,11 +27,12 @@ for i in lookupDf.index:
     lookupNameToFileNum[lookupDf["user"][i]] = lookupDf["userNumber"][i]
 
 # populate new lookup dict from saved state (if any)
-if os.path.exists(newLookupPath):
-    newLookupDf = pd.read_csv(newLookupPath, encoding = "utf-8")
-    for i in newLookupDf.index:
-        newLookup[newLookupDf["old file number"][i]] = newLookupDf["new filename"][i]
+# if os.path.exists(newLookupPath):
+#     newLookupDf = pd.read_csv(newLookupPath, encoding = "utf-8")
+#     for i in newLookupDf.index:
+#         newLookup[newLookupDf["old file number"][i]] = newLookupDf["new filename"][i]
 
+os.chdir(currentDir)
 for i in usernameMapDf.index:
     
     oldUsername = usernameMapDf["username"][i] # left
@@ -49,13 +43,23 @@ for i in usernameMapDf.index:
         if oldUsername == recentUsername:
             newLookup[oldUsernameFileNum] = str(oldUsernameFileNum)
         else:
-            recentUsernameFileNum = lookupNameToFileNum[recentUsername]
+            recentUsernameFileNum = lookupNameToFileNum.get(recentUsername, -1)
+            if recentUsernameFileNum == -1:
+                # do not have contribs file for recentUsername
+                newLookup[oldUsernameFileNum] = str(oldUsernameFileNum)
+                continue
+            ofileNumStr = "m" + str(recentUsernameFileNum)
             if recentUsernameFileNum not in newLookup.keys():
                 # TODO: perform merge between [oldUsernameFileNum].csv and [recentUsernameFileNum].csv
-                newLookup[recentUsernameFileNum] = "m" + str(recentUsernameFileNum)
+                print("Merging " + str(oldUsernameFileNum) + "(" + oldUsername + ") with "\
+                      + str(recentUsernameFileNum) + "(" + recentUsername + ")")
+                merge(str(oldUsernameFileNum) + ".csv", str(recentUsernameFileNum) + ".csv", ofileNumStr + ".csv")
             else:
                 # TODO: perform merge between [oldUsernameFileNum].csv and newLookup[recentUsernameFileNum].csv
-                newLookup[recentUsernameFileNum] = "m" + str(recentUsernameFileNum)
+                print("Merging " + str(oldUsernameFileNum) + "(" + oldUsername + ") with "\
+                      + newLookup[recentUsernameFileNum] + "(" + recentUsername + ")")
+                merge(str(oldUsernameFileNum) + ".csv", newLookup[recentUsernameFileNum] + ".csv", ofileNumStr + ".csv")
+            newLookup[recentUsernameFileNum] = ofileNumStr
             
         
 newLookupDf = pd.DataFrame({"old file number": newLookup.keys(), "new filename": newLookup.values()})
