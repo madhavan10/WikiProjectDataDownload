@@ -13,12 +13,15 @@ import re
 
 projectMembershipCsvPath = "/home/madhavso/wikipedia_data/user_lists/projectMembership.csv"
 userLookupPath = "/home/madhavso/wikipedia_data/user_lists/1-10000_union_lookup_updated.csv"
+mergedFilesListPath = "/home/madhavso/wikipedia_data/user_lists/mergedFilesLookup.csv"
 topEditorsRootDir = "/home/madhavso/wikipedia_data/top_editors"
 dfProjectMembership = pd.read_csv(projectMembershipCsvPath, encoding = "utf-8")
 userLookupDf = pd.read_csv(userLookupPath, encoding = "utf-8")
 userLookup = {}
 for i in userLookupDf.index:
     userLookup[userLookupDf["userNumber"][i]] = userLookupDf["user"][i]
+mergedFilesListDf = pd.read_csv(mergedFilesListPath, encoding = "utf-8")
+mergedFilesList = list(mergedFilesListDf["new filename"])
 
 usernameToProjectMembership = OrderedDict()
 
@@ -29,19 +32,21 @@ for i in dfProjectMembership.index:
         usernameToProjectMembership[user] = []
     usernameToProjectMembership[user].append(project)
 
-for file in os.listdir(os.path.join(topEditorsRootDir, "contributions")):
-    splitFilename = file.rsplit(".", maxsplit = 1)
-    if splitFilename[-1] != "csv":
-        continue
-    joinDatesDfPath = os.path.join(topEditorsRootDir, "projectJoinDates", file)
-    unmatchedProjectsDfPath = os.path.join(topEditorsRootDir, "unmatchedProjects", file)
+for mFilename in mergedFilesList:
+    if mFilename.startswith("m"):
+        filename = mFilename[1:]
+    else:
+        filename = mFilename
+    fullFilename = filename + ".csv"
+    joinDatesDfPath = os.path.join(topEditorsRootDir, "projectJoinDates", fullFilename)
+    unmatchedProjectsDfPath = os.path.join(topEditorsRootDir, "unmatchedProjects", fullFilename)
     if os.path.exists(joinDatesDfPath) and os.path.exists(unmatchedProjectsDfPath):
         continue
-    userLookupId = int(splitFilename[0])
-    contribsCsvPath = os.path.join(topEditorsRootDir, "contributions", file)
+    userLookupId = int(filename)
+    contribsCsvPath = os.path.join(topEditorsRootDir, "contributions", mFilename + ".csv")
     user = userLookup[userLookupId]
     if user in usernameToProjectMembership.keys():
-        print(user, file)
+        print(user, mFilename + ".csv")
         projectList = usernameToProjectMembership[user]
         regexList = []
         ifMatched = []
