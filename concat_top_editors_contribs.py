@@ -12,7 +12,7 @@ import pandas as pd
 resumeFilePath = "/home/madhavso/wikipedia_data/top_editors/contributions/all_users_file/resume.csv"
 mergedFilesLookupPath = "/home/madhavso/wikipedia_data/user_lists/mergedFilesLookup.csv"
 outPath = "/home/madhavso/wikipedia_data/top_editors/contributions/all_users_file/contributions.csv"
-contribsDir = "/home/madhavso/wikipedia_data/top_editors/contributions/test"
+contribsDir = "/home/madhavso/wikipedia_data/top_editors/contributions"
 
 # if concat was interrupted, get params about where to resume
 if os.path.exists(resumeFilePath) and os.path.getsize(resumeFilePath) > 0:
@@ -54,7 +54,6 @@ with open(outPath, "a", newline = "", encoding = "utf-8") as ofile:
                     newRow = [row[USERID_INDEX], row[TIMESTAMP_INDEX], row[SIZEDIFF_INDEX]]
                     writer.writerow(newRow)
                     rowNumber += 1
-                print("Wrote ", rowNumber, " rows")
                 rowNumber = 0
             fileIndex += 1
     except BaseException:
