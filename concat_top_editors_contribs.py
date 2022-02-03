@@ -44,6 +44,7 @@ with open(outPath, "a", newline = "", encoding = "utf-8") as ofile:
             with open(filesToConcat[i] + ".csv", "r", newline = "", encoding = "utf-8") as iCsv:
                 print(i, ":", filesToConcat[i])
                 reader = csv.reader(iCsv)
+                next(reader) # skip header
                 # skip over already-written rows
                 for skipCounter in range(rowNumber):
                     next(reader)
