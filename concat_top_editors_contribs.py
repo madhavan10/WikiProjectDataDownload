@@ -53,6 +53,7 @@ with open(outPath, "a", newline = "", encoding = "utf-8") as ofile:
                     newRow = [row[USERID_INDEX], row[TIMESTAMP_INDEX], row[SIZEDIFF_INDEX]]
                     writer.writerow(newRow)
                     rowNumber += 1
+                print("Wrote ", rowNumber, " rows")
                 rowNumber = 0
             fileIndex += 1
     except BaseException:
