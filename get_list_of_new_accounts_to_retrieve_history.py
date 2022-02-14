@@ -33,7 +33,7 @@ for i in usersDf.index:
         reader = csv.reader(f)
         #skip header
         next(reader)
-        oldUserId = next(reader)[0]
+        oldUserId = next(reader)[1]
         
     PARAMS = {
            "action": "query",
@@ -48,6 +48,7 @@ for i in usersDf.index:
     user = json["query"]["users"][0]
     newUserId = str(user["userid"])
     
+    print(oldUserId, ":", newUserId)
     if oldUserId == newUserId:
         usersNotToRetrieve.append(newUsername)
     else:
@@ -58,6 +59,6 @@ outDf.to_csv("/home/madhavso/wikipedia_data/user_lists/usersToRetrieve.csv", ind
 
 with open("/home/madhavso/wikipedia_data/user_lists/usersNotToRetrieve.txt", "w", encoding = "utf-8") as oF:
     for u in usersNotToRetrieve:
-        f.write(u + "\n")
+        oF.write(u + "\n")
 
         
