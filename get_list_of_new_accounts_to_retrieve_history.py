@@ -14,7 +14,7 @@ lookup = {}
 for i in lookupDf.index:
     lookup[lookupDf["user"][i]] = lookupDf["userNumber"][i]
 
-usersPath = "/home/madhavso/wikipedia_data/user_lists/users_to_retrieve.csv"
+usersPath = "/home/madhavso/wikipedia_data/user_lists/unfilteredUsersToRetrieve.csv"
 usersDf = pd.read_csv(usersPath, encoding = "utf-8")
 
 usersToRetrieve = []
