@@ -30,7 +30,7 @@ writeDir = os.path.join(contribsDir, "minor")
 os.chdir(contribsDir)
 for filename in os.listdir():
     split = filename.rsplit(".", maxsplit = 1)
-    if split[-1] != ".csv" or filename.startswith("m"):
+    if split[-1] != "csv" or filename.startswith("m"):
         continue
     outCsvPath = os.path.join(writeDir, filename)
     if os.path.exists(outCsvPath) and os.path.getsize(outCsvPath) != 0:
