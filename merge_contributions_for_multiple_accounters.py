@@ -12,7 +12,7 @@ from utils import merge
 
 # input paths
 usernameMapPath = "/home/madhavso/wikipedia_data/user_lists/usernamesMapTopEditors.csv"
-lookupPath = "/home/madhavso/wikipedia_data/user_lists/1-10000_union_lookup_updated.csv"
+lookupPath = "/home/madhavso/wikipedia_data/user_lists/topEditorsLookup.csv"
 newLookupPath = "/home/madhavso/wikipedia_data/user_lists/mergedFilesLookup.csv"
 currentDir = "/home/madhavso/wikipedia_data/top_editors/contributions"
 
