@@ -36,17 +36,10 @@ for file in os.listdir():
     df["userid"] = getUserId(file)
     # insert userid column at the front
     cols = df.columns.tolist()
-    # temp = cols[2]
-    # cols[2] = cols[1]
-    # cols[1] = cols[0]
-    # cols[0] = temp
     cols = cols[-1:] + cols[0:-1]
-    print(cols)
     df = df[cols]
-    print(df)
-    break
     dfs.append(df)
 
-#outDf = pd.concat(dfs, ignore_index = True)
-#outDf.to_csv(outPath, index = False, encoding = "utf-8")
+outDf = pd.concat(dfs, ignore_index = True)
+outDf.to_csv(outPath, index = False, encoding = "utf-8")
     
