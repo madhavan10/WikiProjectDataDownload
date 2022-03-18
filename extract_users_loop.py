@@ -41,6 +41,11 @@ def extract_users(inputsDf, rootDir, projectFilename):
     
     users = OrderedDict()
     numberOfUsersByPage = OrderedDict()
+    regexesByPage = OrderedDict()
+    commonRegexes = ['\{\{ul?\s*\|\s*([^\}]+)\}\}', '\{\{user[0-9]?\s*\|\s*([^\}]+)\}\}', '\{\{User-c\s*\|\s*([^\}]+)\}\}', '\{\{admin\s*\|\s*([^\}]+)\}\}'\
+                         , '\{\{AWBUser\s*\|\s*([^\}]+)\}\}', '\[\[User\s*:\s*([^\]\|]+)', '\[\[User talk\s*:\s*([^\]\|]+)'\
+                             , '\[\[User_talk\s*:\s*([^\]\|]+)', '\{\{np2\s*\|\s*([^\}]+)\}\}'\
+                                 , '\{\{Mailing list member\s*\|\s*user\s*=\s*([^\|\}]+)']
     
     for i in inputsDf.index:
     
@@ -50,8 +55,15 @@ def extract_users(inputsDf, rootDir, projectFilename):
         
         if page not in numberOfUsersByPage.keys():
             numberOfUsersByPage[page] = 0
-            print(page)
         
+        if page not in regexesByPage.keys():
+            regexesByPage[page] = set()
+            for e in commonRegexes:
+                regexesByPage[page].add(e)
+        regexesByPage[page].add(userRegex)
+    
+    for page, regexSet in regexesByPage.items():
+        print(page)
         PARAMS = {
                 "action": "query",
                 "prop": "revisions",
@@ -63,8 +75,12 @@ def extract_users(inputsDf, rootDir, projectFilename):
             }
         
         R = S.get(url = URL, params = PARAMS)
-        foundUsers = re.findall(userRegex, R.text, flags = re.IGNORECASE)
-        for user in foundUsers:
+        foundUsers = OrderedDict()
+        for rgx in regexSet:
+            foundUsersList = re.findall(rgx, R.text, flags = re.IGNORECASE)
+            for uname in foundUsersList:
+                foundUsers[uname] = None
+        for user in foundUsers.keys():
             #clean-up username
             try:
                 user = remove_forward_slash(user)
@@ -104,10 +120,15 @@ inputsDf = pd.read_excel(r"C:\users\madha\dropbox\wikiproject_data_download\retr
 groupedInputs = inputsDf.groupby("wikiproject")
 
 for name, group in groupedInputs:
+    group.reset_index(drop = True, inplace = True)
     projectId = projectIdLookup[name]
     rootDirForUserLists = os.path.join(projectRootDir, "user_lists", "new_way")
     if not os.path.exists(os.path.join(rootDirForUserLists, str(projectId) + ".csv")):
-        extract_users(group, projectRootDir, str(projectId))
+        try:
+            extract_users(group, projectRootDir, str(projectId))
+        except:
+            statsCsv.close()
+            raise
     else:
         print(name + " already has a members list csv.")
     
