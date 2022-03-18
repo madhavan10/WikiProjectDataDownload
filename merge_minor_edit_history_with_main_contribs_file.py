@@ -18,22 +18,10 @@ dfMain = pd.read_csv(mainFilePath, encoding = "utf-8")
 print("--done")
 userIdMain = dfMain["userid"][0]
 
-count = 0
-for i in dfMain.index:
-    if str(dfMain["revid"][i]) == "-1":
-        count += 1
-print("revid is -1 ", count, " times")
-
 print("reading in minor file...")
 dfMinor = pd.read_csv(minorFilePath, encoding = "utf-8")
 print("--done")
 userIdMinor = dfMinor["userid"][0]
-
-count = 0
-for i in dfMinor.index:
-    if str(dfMinor["revid"][i]) == "-1":
-        count += 1
-print("revid is -1 ", count, " times")
 
 if userIdMain != userIdMinor:
     print("User ids don't match")
@@ -48,6 +36,8 @@ print("Lengths:")
 print("Main", len(dfMain))
 print("Minor", len(dfMinor))
 print("Merged", len(mergedDf))
+
+
 
 # TODO change for loop
 # mergedDf.to_csv(os.path.join("/home/madhavso/wikipedia_data/top_editors/contributions/big_file_test", filename), index = False, encoding = "utf-8")

@@ -10,7 +10,7 @@ import csv
 import pandas as pd
 import os
 
-userNumberLookupDf = pd.read_csv("/home/madhavso/wikipedia_data/user_lists/1-10000_lookup.csv", encoding = "utf-8")
+userNumberLookupDf = pd.read_csv("/home/madhavso/wikipedia_data/user_lists/topEditorsLookup.csv", encoding = "utf-8")
 userNumberLookup = {}
 for i in userNumberLookupDf.index:
     userNumberLookup[userNumberLookupDf["user"][i]] = userNumberLookupDf["userNumber"][i]

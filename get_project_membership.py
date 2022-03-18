@@ -9,7 +9,7 @@ import pandas as pd
 from collections import OrderedDict
 
 usernamesMapCsvPath = r"C:\users\madha\documents\wikiproject\user_lists\usernamesMap.csv"
-membersListPath = r"C:\users\madha\documents\wikiproject\user_lists\complete_user_list.csv"
+membersListPath = r"C:\users\madha\documents\wikiproject\user_lists\complete_user_list_with_ubx_wpc.csv"
 
 usernameToMostRecentUsername = OrderedDict()
 usernamesMapDf = pd.read_csv(usernamesMapCsvPath, encoding = "utf-8")
