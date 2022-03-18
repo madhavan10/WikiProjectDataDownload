@@ -20,13 +20,7 @@ def getUserId(filename):
         return userid
 
 outPath = "/home/madhavso/wikipedia_data/top_editors/projectJoinDatesAllUsers.csv"
-userLookupPath = "/home/madhavso/wikipedia_data/user_lists/topEditorsLookup.csv"
 joinDatesDir = "/home/madhavso/wikipedia_data/top_editors/projectJoinDates"
-
-userLookupDf = pd.read_csv(userLookupPath, encoding = "utf-8")
-userLookup = {}
-for i in userLookupDf.index:
-    userLookup[userLookupDf["userNumber"][i]] = userLookupDf["user"][i]
     
 os.chdir(joinDatesDir)
 dfs = []

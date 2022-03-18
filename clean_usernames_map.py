@@ -7,52 +7,49 @@ Created on Thu Feb  3 16:29:16 2022
 
 import pandas as pd
 
-#remove all forward-slashes and everything that comes after from right column in usernamesMap
-#replace all underscores with spaces and strip white-space
+# paths
+lookupPath = r"C:\Users\madha\Documents\WikiProject\top_editors\topEditorsLookup.csv"
+topEditorsMapPath = r"C:\Users\madha\Documents\WikiProject\top_editors\usernamesMapTopEditors.csv"
 usernameMapDfPath = r"C:\Users\madha\Documents\WikiProject\user_lists\usernamesMap.csv"
-usernameMapDf = pd.read_csv(usernameMapDfPath, encoding = "utf-8")
-for i in usernameMapDf.index:
-    name = usernameMapDf["mostRecentUsername"][i]
-    if "/" in name:
-        name = name.split("/", maxsplit = 1)[0]
-    name = name.replace("_", " ").strip()
-    usernameMapDf.loc[i, "mostRecentUsername"] = name
+topEditorsOutPath = r"C:\Users\madha\Documents\WikiProject\top_editors\usernamesMapTopEditors_new.csv"
 
-
-lookupDf = pd.read_csv(r"C:\Users\madha\Documents\WikiProject\top_editors\1-10000_union_lookup_updated.csv", encoding = "utf-8")
-lookup = {}
-for i in lookupDf.index:
-    lookup[lookupDf["user"][i]] = lookupDf["userNumber"][i]
-
-topEditorsMapDf = pd.read_csv(r"C:\Users\madha\Documents\WikiProject\top_editors\usernamesMapTopEditors.csv", encoding = "utf-8")
+topEditorsMapDf = pd.read_csv(topEditorsMapPath, encoding = "utf-8")
 
 #remove forward-slashes, replace underscores with spaces, strip white-space
 for i in topEditorsMapDf.index:
     name = topEditorsMapDf["mostRecentUsername"][i]
-    if "/" in name:
-        name = name.split("/", maxsplit = 1)[0]
-    name = name.replace("_", " ").strip()
-    topEditorsMapDf.loc[i, "mostRecentUsername"] = name
+    cleanedName = name
+    if "/" in cleanedName:
+        cleanedName = cleanedName.split("/", maxsplit = 1)[0]
+    cleanedName = cleanedName.replace("_", " ").strip()
+    if cleanedName != name:
+        topEditorsMapDf.loc[i, "mostRecentUsername"] = cleanedName
+        #print(name, ":", cleanedName)
 
-#if recentUsername isn't in lookup, then set recentUsername to oldUsername
-for i in topEditorsMapDf.index:
-    oldUsername = topEditorsMapDf["username"][i]
-    recentUsername = topEditorsMapDf["mostRecentUsername"][i]
-    if oldUsername != recentUsername:
-        ID = lookup.get(recentUsername, -1)
-        if ID == -1:
-            topEditorsMapDf.loc[i, "mostRecentUsername"] = oldUsername
-
-topEditorsMap = {}
-for i in topEditorsMapDf.index:
-    topEditorsMap[topEditorsMapDf["username"][i]] = topEditorsMapDf["mostRecentUsername"][i]
-
-count = 0
+lookupDf = pd.read_csv(r"C:\Users\madha\Documents\WikiProject\top_editors\topEditorsLookup.csv", encoding = "utf-8")
+lookup = {}
+for i in lookupDf.index:
+    lookup[lookupDf["user"][i]] = lookupDf["userNumber"][i]
+    
+#remove all forward-slashes and everything that comes after from right column in usernamesMap
+#replace all underscores with spaces and strip white-space
+usernameMapDf = pd.read_csv(usernameMapDfPath, encoding = "utf-8")
+count = 1
 for i in usernameMapDf.index:
-    oldUsername = usernameMapDf["username"][i]
-    if oldUsername in topEditorsMap.keys() and usernameMapDf["mostRecentUsername"][i] != topEditorsMap[oldUsername]:
-        usernameMapDf.loc[i, "mostRecentUsername"] = topEditorsMap[oldUsername]
-        print(oldUsername, ":", topEditorsMap[oldUsername])
-        count += 1
+    oldName = usernameMapDf["username"][i]
+    name = usernameMapDf["mostRecentUsername"][i]
+    cleanedName = name
+    if "/" in cleanedName:
+        cleanedName = cleanedName.split("/", maxsplit = 1)[0]
+    cleanedName = cleanedName.replace("_", " ").strip()
+    if cleanedName != name:
+        usernameMapDf.loc[i, "mostRecentUsername"] = cleanedName
+        print(name, ":", cleanedName)
+    
+    # if the current username of a user is not in top editors but the old username is, keep the old username
+    if oldName in lookup.keys() and cleanedName not in lookup.keys():
+        print(count, oldName, ":", cleanedName)
+        usernameMapDf.loc[i, "mostRecentUsername"] = oldName
 
 usernameMapDf.to_csv(usernameMapDfPath, index = False, encoding = "utf-8")
+topEditorsMapDf.to_csv(topEditorsOutPath, index = False, encoding = "utf-8")
