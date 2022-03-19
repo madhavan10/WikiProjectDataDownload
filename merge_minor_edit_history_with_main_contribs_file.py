@@ -9,35 +9,28 @@ import pandas as pd
 import os
 
 mainContribsDir = "/home/madhavso/wikipedia_data/top_editors/contributions"
-filename = "5029.csv"
-mainFilePath = os.path.join(mainContribsDir, filename) 
-minorFilePath = os.path.join(mainContribsDir, "minor", filename)
+mergedContribsDir = "/home/madhavso/wikipedia_data/top_editors/contributions/with_minor_edit_flag"
+for filename in os.listdir(mainContribsDir):
+    if filename.rsplit(".", maxsplit = 1)[-1] != "csv":
+        continue
+    if filename.startswith("m"):
+        continue
+    print(filename)
+    mainFilePath = os.path.join(mainContribsDir, filename) 
+    minorFilePath = os.path.join(mainContribsDir, "minor", filename)
+    
+    dfMain = pd.read_csv(mainFilePath, encoding = "utf-8")
+    userIdMain = dfMain["userid"][0]
+    
+    dfMinor = pd.read_csv(minorFilePath, encoding = "utf-8")
+    userIdMinor = dfMinor["userid"][0]
+    
+    if userIdMain != userIdMinor:
+        print("User ids don't match")
+        break
+    
+    dfMinor.drop(columns = "userid", inplace = True)
+    
+    mergedDf = dfMain.merge(dfMinor, how = "inner", on = "revid")
 
-print("reading in main file...")
-dfMain = pd.read_csv(mainFilePath, encoding = "utf-8")
-print("--done")
-userIdMain = dfMain["userid"][0]
-
-print("reading in minor file...")
-dfMinor = pd.read_csv(minorFilePath, encoding = "utf-8")
-print("--done")
-userIdMinor = dfMinor["userid"][0]
-
-if userIdMain != userIdMinor:
-    print("User ids don't match")
-else:
-    print("User ids match")
-
-dfMinor.drop(columns = "userid", inplace = True)
-
-mergedDf = dfMain.merge(dfMinor, how = "inner", on = "revid")
-
-print("Lengths:")
-print("Main", len(dfMain))
-print("Minor", len(dfMinor))
-print("Merged", len(mergedDf))
-
-
-
-# TODO change for loop
-# mergedDf.to_csv(os.path.join("/home/madhavso/wikipedia_data/top_editors/contributions/big_file_test", filename), index = False, encoding = "utf-8")
+    mergedDf.to_csv(os.path.join(mergedContribsDir, filename), index = False, encoding = "utf-8")
