@@ -9,8 +9,8 @@ import pandas as pd
 import os
 
 contribsDir = "/home/madhavso/wikipedia_data/top_editors/contributions"
-
-for file in os.listdir(contribsDir):
+os.chdir(contribsDir)
+for file in os.listdir():
     split = file.rsplit(".", maxsplit = 1)
     if split[-1] != "csv":
         continue
