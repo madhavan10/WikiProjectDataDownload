@@ -28,9 +28,9 @@ driver.get("https://en.wikipedia.org/w/index.php?title=Special:UserLogin")
 usernameBox = driver.find_element(By.NAME, "wpName")
 usernameBox.send_keys("Msomanat")
 passwordBox = driver.find_element(By.NAME, "wpPassword")
-passwordBox.send_keys("p1tm0qpgu" + Keys.ENTER)
+passwordBox.send_keys("j3tyhnmn55" + Keys.ENTER)
 
-lookupPath = "/home/madhavso/wikipedia_data/user_lists/1-10000_union_lookup.csv"
+lookupPath = "/home/madhavso/wikipedia_data/user_lists/1-10000_union_lookup_updated.csv"
 lookupDf = pd.read_csv(lookupPath, encoding = "utf-8")
 lookupIdToName = {}
 for i in lookupDf.index:
@@ -78,7 +78,7 @@ with open(usernamesMapPath, "a", newline = "", encoding = "utf-8") as usernamesM
                 except:
                     failedQueriesLog.write(split[0] + "\n")
                     failedQueriesLog.write(username + "\n")
-                    traceback.print_tb(sys.exc_info()[2], file = failedQueriesLog)
+                    traceback.print_exc(file = failedQueriesLog)
                     continue
                 if mostRecentUsername == None:
                     writerInvalidUsernames.writerow([username])
